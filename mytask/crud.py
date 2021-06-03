@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import user
 
-from practice import models, schemas
+from mytask import models, schemas
 from passlib.context import CryptContext
 from fastapi.encoders import jsonable_encoder
 
@@ -24,9 +24,19 @@ def get_users(db: Session, skip: int = 0, limit: int = 0):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 
+def get_projects(db: Session, skip: int = 0, limit: int = 0):
+    return db.query(models.Project).offset(skip).limit(limit).all()
+
+
 def get_user_by_username(db: Session, username):
     value = db.query(models.User).filter(models.User.username == username).first()
-    print(value)
+
+    return value
+
+
+def get_task_by_username(db: Session, username):
+    value = db.query(models.Task).filter(models.Task.taskId == username).all()
+
     return value
 
 
@@ -61,6 +71,26 @@ def create_project(db: Session, project: schemas.ProjectCreate):
     db.commit()
     db.refresh(db_project)
     return db_project
+
+
+def create_task(db: Session, task: schemas.TaskCreate, username: str):
+    db_task = models.Task(
+        taskName=task.taskName, taskStatus=task.taskStatus, taskId=username
+    )
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+
+def update_task(db: Session, username, task):
+
+    value = db.query(models.Task).filter(models.Task.taskId == username).first()
+    value.taskStatus = task.taskStatus
+    db.add(value)
+    db.commit()
+    db.refresh(value)
+    return value
 
 
 def get_user_by_username(db: Session, username: str):

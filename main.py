@@ -1,6 +1,7 @@
+from typing import List
 from sqlalchemy import engine
-from practice.database import SessionLocal, engine
-from practice import models, schemas, crud
+from mytask.database import SessionLocal, engine
+from mytask import models, schemas, crud
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -37,8 +38,77 @@ def create_access_token(data: dict, expires_delta):
 
 
 @app.post("/create/project")
-def create_project(project: schemas.Project, db: Session = Depends(get_db)):
-    return crud.create_project(db, project)
+def create_project(
+    project: schemas.Project,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    user1 = current_user(token, db)
+    if user1.status == "superuser":
+        return crud.create_project(db, project)
+    raise HTTPException(status_code=400, detail="only super user can create")
+
+
+@app.get("/projects/", response_model=List[schemas.Project])
+def read_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    projects = crud.get_projects(db, skip=skip, limit=limit)
+    return projects
+
+
+@app.get("/users", response_model=List[schemas.User])
+def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = crud.get_users(db, skip=skip, limit=limit)
+    return users
+
+
+@app.get("/task")
+def get_task_username(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    result = current_user(token, db)
+    if result:
+        value = crud.get_task_by_username(db, result.username)
+        return value
+    raise HTTPException(status_code=400, detail="the logged in user has no task")
+
+
+@app.put("/update/status/task")
+async def update_task_status(
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+
+    value = current_user(token, db)
+
+    result = crud.update_task(db, value.username, task)
+    return result
+
+
+@app.post("/create/task")
+def create_task(
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("user")
+        if username is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+
+    return crud.create_task(db, task, token_data.username)
 
 
 @app.post("/create/user")

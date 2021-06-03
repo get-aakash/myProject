@@ -19,6 +19,21 @@ class Project(ProjectBase):
         orm_mode = True
 
 
+class TaskBase(BaseModel):
+
+    taskName: str
+    taskStatus: str
+
+
+class TaskCreate(TaskBase):
+    pass
+
+
+class Task(TaskBase):
+    id: int
+    taskId: str
+
+
 class UserBase(BaseModel):
     name: str
     username: str

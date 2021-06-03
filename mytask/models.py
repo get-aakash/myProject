@@ -1,4 +1,4 @@
-from practice.database import Base
+from mytask.database import Base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
@@ -23,3 +23,12 @@ class Project(Base):
     projectName = Column(String(20), index=True)
     assigned = Column(String(20), index=True)
     status = Column(String(20), index=True)
+
+
+class Task(Base):
+    __tablename__ = "task"
+
+    id = Column(Integer, primary_key=True, index=True)
+    taskId = Column(String(20), ForeignKey("users.username"), index=True)
+    taskName = Column(String(20), index=True)
+    taskStatus = Column(String(20), index=True)
