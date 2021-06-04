@@ -43,6 +43,11 @@ def create_project(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
+    """
+    Super user creates the project and its attributes. Super user also assigns the project to the users.
+    so the user must be logged in as super user to create a project
+
+    """
     user1 = current_user(token, db)
     if user1.status == "superuser":
         return crud.create_project(db, project)
@@ -51,14 +56,40 @@ def create_project(
 
 @app.get("/projects/", response_model=List[schemas.Project])
 def read_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    this module displays the list of all the projects and its attributes created by the super user
+
+    """
     projects = crud.get_projects(db, skip=skip, limit=limit)
     return projects
 
 
 @app.get("/users", response_model=List[schemas.User])
 def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    This module displays the list of all the user stored in the database
+
+    """
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
+
+
+@app.get("/tasks")
+def get_all_task(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    """
+    This module displays the list of all tasks irrespective of the logged in user.
+    So that any one can view the list of tasks
+
+    """
+    value = current_user(token, db)
+    if value.status == "superuser":
+        return crud.get_tasks(db)
+    raise HTTPException(status_code=400, detail="the user needs to be super user")
 
 
 @app.get("/task")
@@ -68,6 +99,10 @@ def get_task_username(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
+    """
+    This module provides the list of all the tasks of logged in user
+
+    """
     result = current_user(token, db)
     if result:
         value = crud.get_task_by_username(db, result.username)
@@ -81,6 +116,10 @@ async def update_task_status(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
+    """
+    This module updates the task status of the user
+
+    """
 
     value = current_user(token, db)
 
@@ -94,6 +133,10 @@ def create_task(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
+    """
+    A user must be logged in to create their own task.
+
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -117,7 +160,10 @@ def create_user(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
+    """
+    Inorder to create a user. The logged in user must have a status of superuser.
 
+    """
     user1 = current_user(token, db)
     if user1.status == "superuser":
         return crud.create_user(db, user)
