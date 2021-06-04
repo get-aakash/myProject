@@ -7,6 +7,10 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 from jose import JWTError, jwt
+from fastapi import APIRouter
+
+router = APIRouter()
+
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
@@ -37,7 +41,7 @@ def create_access_token(data: dict, expires_delta):
     return encoded_jwt
 
 
-@app.post("/create/project")
+@app.post("/create/project", tags=["project"])
 def create_project(
     project: schemas.Project,
     token: str = Depends(oauth2_scheme),
@@ -54,7 +58,7 @@ def create_project(
     raise HTTPException(status_code=400, detail="only super user can create")
 
 
-@app.get("/projects/", response_model=List[schemas.Project])
+@app.get("/projects/", response_model=List[schemas.Project], tags=["project"])
 def read_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     this module displays the list of all the projects and its attributes created by the super user
@@ -64,7 +68,7 @@ def read_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
     return projects
 
 
-@app.get("/users", response_model=List[schemas.User])
+@app.get("/users", response_model=List[schemas.User], tags=["user"])
 def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     This module displays the list of all the user stored in the database
@@ -74,7 +78,7 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return users
 
 
-@app.get("/tasks")
+@app.get("/tasks", tags=["task"])
 def get_all_task(
     skip: int = 0,
     limit: int = 100,
@@ -92,7 +96,7 @@ def get_all_task(
     raise HTTPException(status_code=400, detail="the user needs to be super user")
 
 
-@app.get("/task")
+@app.get("/task", tags=["task"])
 def get_task_username(
     skip: int = 0,
     limit: int = 100,
@@ -110,7 +114,7 @@ def get_task_username(
     raise HTTPException(status_code=400, detail="the logged in user has no task")
 
 
-@app.put("/update/status/task")
+@app.put("/update/status/task", tags=["task"])
 async def update_task_status(
     task: schemas.TaskCreate,
     db: Session = Depends(get_db),
@@ -127,7 +131,7 @@ async def update_task_status(
     return result
 
 
-@app.post("/create/task")
+@app.post("/create/task", tags=["task"])
 def create_task(
     task: schemas.TaskCreate,
     db: Session = Depends(get_db),
@@ -154,7 +158,7 @@ def create_task(
     return crud.create_task(db, task, token_data.username)
 
 
-@app.post("/create/user")
+@app.post("/create/user", tags=["user"])
 def create_user(
     user: schemas.UserCreate,
     db: Session = Depends(get_db),
@@ -218,6 +222,6 @@ def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
     return current_user
 
 
-@app.get("/current/user", response_model=schemas.User)
+@app.get("/current/user", response_model=schemas.User, tags=["user"])
 def get_current_user(current_user: schemas.User = Depends(current_user)):
     return current_user
